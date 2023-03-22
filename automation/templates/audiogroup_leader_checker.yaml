@@ -5,16 +5,19 @@ configDescriptions:
   - name: cronExpression
     type: TEXT
     label: Cron Expression
+    context: tag
     required: true
     description: Cron expression to trigger the update
   - name: thingId
     type: TEXT
     label: Thing id
+    context: thing
     required: true
     description: Id of the thing of type chromecast:audiogroup
   - name: audioGroupName
     type: TEXT
     label: Device Group Id
+    context: tag
     required: true
     description: Name of the device group is Google Home app
 triggers:
