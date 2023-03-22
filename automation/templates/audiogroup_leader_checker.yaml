@@ -1,6 +1,6 @@
 uid: gbicskei:audiogroup_leader_checker
 label: Google Chromecast Audiogroup Configurator
-description: When a chromecast:audiogroup sink is used in the setup it sometimes goes OFFLINE when the elected leader of the group changes. In these cases other group member device takes over the leader role which changes the group IP address. This rule can be scheduled to execute a thing scan in the background and update the configured thing configuration to the new IP.
+description: When a chromecast:audiogroup sink ...
 configDescriptions:
   - name: thingId
     type: TEXT
@@ -28,15 +28,7 @@ actions:
     id: "2"
     configuration:
       type: application/javascript;version=ECMAScript-2021
-      script: >-
-        var logger = log('audiogroup_check');
-
-        var Thing = Java.type('org.openhab.core.thing.Thing');
-        var ThingUID = Java.type('org.openhab.core.thing.ThingUID');
-        var ThingStatus = Java.type('org.openhab.core.thing.ThingStatus');
-
-        var thingRegistryImpl = osgi.getService('org.openhab.core.thing.ThingRegistry');
-        var discoveryServiceImpl = osgi.getService('org.openhab.core.config.discovery.DiscoveryServiceRegistry');
-        var inboxServiceImpl = osgi.getService('org.openhab.core.config.discovery.inbox.Inbox');
-
+      script: >
+        console.loggerName = 'aaa';
+        console.log('AAA');
     type: script.ScriptAction
