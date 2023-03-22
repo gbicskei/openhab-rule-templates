@@ -1,0 +1,119 @@
+configuration: {}
+triggers:
+  - id: "1"
+    configuration:
+      cronExpression: 0 0/5 * ? * *
+    type: timer.GenericCronTrigger
+conditions: []
+actions:
+  - inputs: {}
+    id: "2"
+    configuration:
+      type: application/javascript;version=ECMAScript-2021
+      script: >
+        /**
+         * ID of the audiogroup to check
+         */
+        var audioGroupId = 'chromecast:audiogroup:Notification';
+
+
+        /**
+         * Name of the device group is Google Home app
+         */
+        var audioGroupName = 'Notifications group';
+
+
+        var logger = log('audiogroup_check');
+
+
+        var Thing = Java.type('org.openhab.core.thing.Thing');
+
+        var ThingUID = Java.type('org.openhab.core.thing.ThingUID');
+
+        var ThingStatus = Java.type('org.openhab.core.thing.ThingStatus');
+
+
+        var thingRegistryImpl = osgi.getService('org.openhab.core.thing.ThingRegistry');
+
+        var discoveryServiceImpl = osgi.getService('org.openhab.core.config.discovery.DiscoveryServiceRegistry');
+
+        var inboxServiceImpl = osgi.getService('org.openhab.core.config.discovery.inbox.Inbox');
+
+
+        /**
+         * Discover the named audiogroup and return its settings.
+         */
+        const discoverAudiogroup = () => {
+            logger.debug("Checking audiogroup thing: {}", audioGroupId);
+            var scanListener;
+            try {
+                //clean the inbox
+                logger.debug('Clean the inbox');
+                inboxServiceImpl.getAll().forEach((item) => {
+                    inboxServiceImpl.remove(item.getThingUID());
+                });
+
+                //define the listener
+                scanListener = new class {
+                    thingDiscovered(source, result) {
+                        if ('chromecast:audiogroup' === result.getThingTypeUID().toString()
+                            && audioGroupName === result.getLabel()) {
+                            logger.debug('Audiogroup was found: {}', result.getThingTypeUID());
+                            logger.debug('  Label: {}', result.getLabel());
+                            logger.debug('  IPAddress: {}', result.getProperties().get('ipAddress'));
+                            logger.debug('  Port: {}', result.getProperties().get('port'));
+                        }
+                    }
+
+                    removeOlderResults(source, timestamp) {
+                    }
+
+                    thingRemoved(source, thingUID) {
+                    }
+                }
+
+
+                //add discovery listener
+                discoveryServiceImpl.addDiscoveryListener(scanListener);
+                discoveryServiceImpl.startScan('chromecast', new class {
+                    onErrorOccurred(err) {
+                        logger.error(err);
+                    }
+
+                    onFinished() {
+                        logger.debug('Chromecast audiogroup discovery is finished.');
+                    }
+                });
+            } catch (err) {
+                logger.error(err);
+            } finally {
+                //remove the listener
+                discoveryServiceImpl.removeDiscoveryListener(scanListener);
+                logger.debug("Discovery listener removed");
+            }
+        };
+
+
+        /**
+         * Checks the status of the audiogroup thing. If it is OFFLINE (leader was changed) a discovery is 
+         * initiated to find the new settings and to update the thig.
+         */
+        const checkAudiogroup = () => {
+            //get current settings
+            var thing = thingRegistryImpl.get(new ThingUID(audioGroupId));
+            var config = thing.getConfiguration();
+            var ipAddress = config.get('ipAddress');
+            var port = config.get('port');
+
+            logger.debug('Existing audiogroup found: {}:{}', ipAddress, port);
+            logger.debug('{} is {}.', thing.getUID(), thing.getStatus());
+
+            if (ThingStatus.ONLINE === thing.getStatus()) {
+                logger.debug('Initializing discovery to get new configuration.');
+                discoverAudiogroup();
+            }
+        };
+
+
+        checkAudiogroup();
+    type: script.ScriptAction
